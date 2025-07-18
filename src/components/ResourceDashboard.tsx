@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Plus, Edit2, Save, X, Filter, UserPlus, Building2, Trash2, Users2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Edit2, Save, X, Filter, UserPlus, Building2, Trash2, Users2, Settings } from 'lucide-react';
 
 interface Resource {
   id: string;
@@ -9,10 +9,57 @@ interface Resource {
   project1: string;
   project2: string;
   project3: string;
+  [key: string]: any;
+}
+
+interface ColumnConfig {
+  key: string;
+  label: string;
+  type: 'text' | 'select';
+  options?: string[];
 }
 
 const ResourceDashboard: React.FC = () => {
-  const [resources, setResources] = useState<Resource[]>([
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [columns, setColumns] = useState<ColumnConfig[]>([
+    { key: 'fullName', label: 'Full Name', type: 'text' },
+    { key: 'stream', label: 'Stream', type: 'select', options: [] },
+    { key: 'role', label: 'Role', type: 'text' },
+    { key: 'project1', label: 'Project 1', type: 'text' },
+    { key: 'project2', label: 'Project 2', type: 'text' },
+    { key: 'project3', label: 'Project 3', type: 'text' }
+  ]);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Resource | null>(null);
+  const [editingHeader, setEditingHeader] = useState<string | null>(null);
+  const [headerEditValue, setHeaderEditValue] = useState('');
+  
+  // Multiple filters
+  const [filters, setFilters] = useState({
+    search: '',
+    fullName: '',
+    stream: '',
+    role: '',
+    project: ''
+  });
+  
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddColumnForm, setShowAddColumnForm] = useState(false);
+  const [newColumnName, setNewColumnName] = useState('');
+  const [newColumnType, setNewColumnType] = useState<'text' | 'select'>('text');
+  const [newResource, setNewResource] = useState<Partial<Resource>>({});
+
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const savedResources = localStorage.getItem('resources');
+    const savedColumns = localStorage.getItem('resourceColumns');
+    
+    if (savedResources) {
+      setResources(JSON.parse(savedResources));
+    } else {
+      // Default data
+      const defaultResources = [
     { id: '1', fullName: 'Abdul Nawaz MD', stream: 'Product Management', role: 'Product Manager', project1: '', project2: '', project3: '' },
     { id: '2', fullName: 'Alveena Joyce', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
     { id: '3', fullName: 'Ambarish Srinivasan', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
@@ -96,13 +143,37 @@ const ResourceDashboard: React.FC = () => {
     { id: '81', fullName: 'Vishnu C Bhattatherypad', stream: 'Customer Success', role: 'Customer Success', project1: '', project2: '', project3: '', isDeployed: false },
     { id: '82', fullName: 'Vishnupriya Jeevanram', stream: 'Engineering', role: 'Software Development', project1: '', project2: '', project3: '', isDeployed: false },
     { id: '83', fullName: 'Vivek Muraleedharan', stream: 'Engineering', role: 'Data Scientist', project1: '', project2: '', project3: '' }
-  ]);
+      ];
+      setResources(defaultResources);
+    }
+    
+    if (savedColumns) {
+      setColumns(JSON.parse(savedColumns));
+    }
+  }, []);
 
-  // List of deployed resources
+  // Save data to localStorage whenever resources or columns change
+  useEffect(() => {
+    localStorage.setItem('resources', JSON.stringify(resources));
+  }, [resources]);
+
+  useEffect(() => {
+    localStorage.setItem('resourceColumns', JSON.stringify(columns));
+  }, [columns]);
+
+  // Update stream options when resources change
+  useEffect(() => {
+    const streams = Array.from(new Set(resources.map(r => r.stream).filter(Boolean)));
+    setColumns(prev => prev.map(col => 
+      col.key === 'stream' ? { ...col, options: streams } : col
+    ));
+  }, [resources]);
+
+  // List of deployed resources (exact names as specified)
   const deployedResources = [
     'Ambarish Srinivasan',
-    'Anirudh Sudeendran', 
-    'Dilip Kumar Rajendhiran',
+    'Anirudh Sudeendran',
+    'Dilip  Kumar Rajendhiran',
     'James Victor Francis',
     'Prajjwal Kumar',
     'Sandeep Guruvindapalli',
@@ -111,26 +182,6 @@ const ResourceDashboard: React.FC = () => {
     'Vinodh Rajamohan',
     'Vivek Muraleedharan'
   ];
-
-  const [projects, setProjects] = useState<string[]>(['Project Alpha', 'Project Beta', 'Project Gamma']);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Resource | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStream, setFilterStream] = useState('');
-  const [projectSearchTerm, setProjectSearchTerm] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showAddProjectForm, setShowAddProjectForm] = useState(false);
-  const [newProject, setNewProject] = useState('');
-  const [newResource, setNewResource] = useState<Omit<Resource, 'id'>>({
-    fullName: '',
-    stream: '',
-    role: '',
-    project1: '',
-    project2: '',
-    project3: ''
-  });
-
-  const streams = Array.from(new Set(resources.map(r => r.stream)));
 
   const handleEdit = (resource: Resource) => {
     setEditingId(resource.id);
@@ -152,6 +203,41 @@ const ResourceDashboard: React.FC = () => {
     setEditForm(null);
   };
 
+  const handleHeaderEdit = (columnKey: string, currentLabel: string) => {
+    setEditingHeader(columnKey);
+    setHeaderEditValue(currentLabel);
+  };
+
+  const handleHeaderSave = (columnKey: string) => {
+    setColumns(columns.map(col => 
+      col.key === columnKey ? { ...col, label: headerEditValue } : col
+    ));
+    setEditingHeader(null);
+    setHeaderEditValue('');
+  };
+
+  const handleAddColumn = () => {
+    if (newColumnName.trim()) {
+      const newColumn: ColumnConfig = {
+        key: newColumnName.toLowerCase().replace(/\s+/g, '_'),
+        label: newColumnName,
+        type: newColumnType,
+        options: newColumnType === 'select' ? [] : undefined
+      };
+      setColumns([...columns, newColumn]);
+      
+      // Add empty values for existing resources
+      setResources(resources.map(resource => ({
+        ...resource,
+        [newColumn.key]: ''
+      })));
+      
+      setNewColumnName('');
+      setNewColumnType('text');
+      setShowAddColumnForm(false);
+    }
+  };
+
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this resource?')) {
       setResources(resources.filter(resource => resource.id !== id));
@@ -159,45 +245,42 @@ const ResourceDashboard: React.FC = () => {
   };
 
   const handleAddResource = () => {
-    if (newResource.fullName && newResource.stream && newResource.role) {
+    const hasRequiredFields = columns.some(col => newResource[col.key]);
+    if (hasRequiredFields) {
       const resource: Resource = {
-        ...newResource,
-        id: Date.now().toString()
+        id: Date.now().toString(),
+        ...columns.reduce((acc, col) => ({
+          ...acc,
+          [col.key]: newResource[col.key] || ''
+        }), {})
       };
       setResources([...resources, resource]);
-      setNewResource({
-        fullName: '',
-        stream: '',
-        role: '',
-        project1: '',
-        project2: '',
-        project3: ''
-      });
+      setNewResource({});
       setShowAddForm(false);
     }
   };
 
-  const handleAddProject = () => {
-    if (newProject.trim()) {
-      setProjects([...projects, newProject.trim()]);
-      setNewProject('');
-      setShowAddProjectForm(false);
-    }
+  const handleFilterChange = (filterKey: string, value: string) => {
+    setFilters(prev => ({ ...prev, [filterKey]: value }));
   };
 
   const filteredResources = resources.filter(resource => {
-    const matchesSearch = resource.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.stream.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.project1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.project2.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.project3.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStream = filterStream === '' || resource.stream === filterStream;
-    const matchesProject = projectSearchTerm === '' || 
-                          resource.project1.toLowerCase().includes(projectSearchTerm.toLowerCase()) || 
-                          resource.project2.toLowerCase().includes(projectSearchTerm.toLowerCase()) || 
-                          resource.project3.toLowerCase().includes(projectSearchTerm.toLowerCase());
-    return matchesSearch && matchesStream && matchesProject;
+    const matchesSearch = filters.search === '' || 
+      Object.values(resource).some(value => 
+        String(value).toLowerCase().includes(filters.search.toLowerCase())
+      );
+    
+    const matchesFilters = Object.entries(filters).every(([key, value]) => {
+      if (key === 'search' || value === '') return true;
+      if (key === 'project') {
+        return resource.project1?.toLowerCase().includes(value.toLowerCase()) ||
+               resource.project2?.toLowerCase().includes(value.toLowerCase()) ||
+               resource.project3?.toLowerCase().includes(value.toLowerCase());
+      }
+      return String(resource[key] || '').toLowerCase().includes(value.toLowerCase());
+    });
+    
+    return matchesSearch && matchesFilters;
   });
 
   const isDeployed = (fullName: string) => {
@@ -222,6 +305,56 @@ const ResourceDashboard: React.FC = () => {
     return colors[stream as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
+  const renderCell = (resource: Resource, column: ColumnConfig) => {
+    if (editingId === resource.id) {
+      if (column.type === 'select' && column.options) {
+        return (
+          <select
+            value={editForm?.[column.key] || ''}
+            onChange={(e) => setEditForm({ ...editForm!, [column.key]: e.target.value })}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          >
+            <option value="">Select {column.label}</option>
+            {column.options.map(option => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        );
+      } else {
+        return (
+          <input
+            type="text"
+            value={editForm?.[column.key] || ''}
+            onChange={(e) => setEditForm({ ...editForm!, [column.key]: e.target.value })}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          />
+        );
+      }
+    } else {
+      const value = resource[column.key];
+      if (column.key === 'fullName') {
+        return (
+          <div className={`text-sm font-semibold ${isDeployed(value) ? 'text-amber-700' : 'text-gray-900'}`}>
+            {value}
+            {isDeployed(value) && <span className="ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full">Deployed</span>}
+          </div>
+        );
+      } else if (column.key === 'stream') {
+        return (
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStreamColor(value)}`}>
+            {value}
+          </span>
+        );
+      } else if (column.key === 'role') {
+        return <div className="text-sm text-blue-600 font-medium">{value}</div>;
+      } else if (column.key.startsWith('project')) {
+        return <div className="text-sm text-green-600 font-medium">{value}</div>;
+      } else {
+        return <div className="text-sm text-gray-600 font-medium">{value}</div>;
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -235,18 +368,18 @@ const ResourceDashboard: React.FC = () => {
         </div>
         <div className="flex space-x-2">
           <a
-            href={"data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(resources, null, 2))}
+            href={`data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(resources, null, 2))}`}
             download="resources.json"
             className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 shadow-sm"
           >
             <span>Download Data</span>
           </a>
           <button
-            onClick={() => setShowAddProjectForm(true)}
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 shadow-sm"
+            onClick={() => setShowAddColumnForm(true)}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
           >
-            <Building2 className="w-4 h-4" />
-            <span>Add Project</span>
+            <Settings className="w-4 h-4" />
+            <span>Add Column</span>
           </button>
           <button
             onClick={() => setShowAddForm(true)}
@@ -258,40 +391,246 @@ const ResourceDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+      {/* Multiple Filters */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <h3 className="text-lg font-semibold mb-3 text-gray-900">Filters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search all fields..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            />
+          </div>
           <input
             type="text"
-            placeholder="Search resources or projects..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+            placeholder="Filter by name..."
+            value={filters.fullName}
+            onChange={(e) => handleFilterChange('fullName', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          />
+          <select
+            value={filters.stream}
+            onChange={(e) => handleFilterChange('stream', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          >
+            <option value="">All Streams</option>
+            {Array.from(new Set(resources.map(r => r.stream).filter(Boolean))).map(stream => (
+              <option key={stream} value={stream}>{stream}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            placeholder="Filter by role..."
+            value={filters.role}
+            onChange={(e) => handleFilterChange('role', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          />
+          <input
+            type="text"
+            placeholder="Filter by project..."
+            value={filters.project}
+            onChange={(e) => handleFilterChange('project', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
           />
         </div>
-        <select
-          value={filterStream}
-          onChange={(e) => setFilterStream(e.target.value)}
-          className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
-        >
-          <option value="">All Streams</option>
-          {streams.map(stream => (
-            <option key={stream} value={stream}>{stream}</option>
-          ))}
-        </select>
-        <input
-          type="text"
-          placeholder="Filter by project..."
-          value={projectSearchTerm}
-          onChange={(e) => setProjectSearchTerm(e.target.value)}
-          className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
-        />
       </div>
 
-      {showAddProjectForm && (
+      {/* Add Column Form */}
+      {showAddColumnForm && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-xl font-semibold mb-4 text-gray-900">Add New Project</h3>
-          <div className="flex space-x-4">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900">Add New Column</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Column Name</label>
+              <input
+                type="text"
+                value={newColumnName}
+                onChange={(e) => setNewColumnName(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                placeholder="Enter column name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Column Type</label>
+              <select
+                value={newColumnType}
+                onChange={(e) => setNewColumnType(e.target.value as 'text' | 'select')}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="text">Text</option>
+                <option value="select">Dropdown</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-3 mt-4">
+            <button
+              onClick={() => setShowAddColumnForm(false)}
+              className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddColumn}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Add Column
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Resource Form */}
+      {showAddForm && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900">Add New Resource</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {columns.map(column => (
+              <div key={column.key}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{column.label}</label>
+                {column.type === 'select' && column.options ? (
+                  <select
+                    value={newResource[column.key] as string || ''}
+                    onChange={(e) => setNewResource({ ...newResource, [column.key]: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="">Select {column.label}</option>
+                    {column.options.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={newResource[column.key] as string || ''}
+                    onChange={(e) => setNewResource({ ...newResource, [column.key]: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    placeholder={`Enter ${column.label.toLowerCase()}`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end space-x-3 mt-4">
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddResource}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Add Resource
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                {columns.map((column) => (
+                  <th key={column.key} className="px-6 py-4 text-left text-sm font-medium text-gray-900 uppercase tracking-wider">
+                    {editingHeader === column.key ? (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={headerEditValue}
+                          onChange={(e) => setHeaderEditValue(e.target.value)}
+                          className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500"
+                          onKeyPress={(e) => e.key === 'Enter' && handleHeaderSave(column.key)}
+                        />
+                        <button
+                          onClick={() => handleHeaderSave(column.key)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <Save className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setEditingHeader(null)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <span>{column.label}</span>
+                        <button
+                          onClick={() => handleHeaderEdit(column.key, column.label)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </th>
+                ))}
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-900 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredResources.map((resource) => (
+                <tr key={resource.id} className={`hover:bg-gray-50 ${isDeployed(resource.fullName) ? 'bg-yellow-50' : ''}`}>
+                  {columns.map((column) => (
+                    <td key={column.key} className="px-6 py-4">
+                      {renderCell(resource, column)}
+                    </td>
+                  ))}
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    {editingId === resource.id ? (
+                      <div className="flex justify-end space-x-3">
+                        <button
+                          onClick={handleSave}
+                          className="text-green-600 hover:text-green-800 p-1"
+                        >
+                          <Save className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={handleCancel}
+                          className="text-red-600 hover:text-red-800 p-1"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          onClick={() => handleEdit(resource)}
+                          className="text-blue-600 hover:text-blue-800 p-1"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(resource.id)}
+                          className="text-red-600 hover:text-red-800 p-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ResourceDashboard;
             <input
               type="text"
               value={newProject}

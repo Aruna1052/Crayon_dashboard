@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { CheckCircle, XCircle, Plus, Edit2, Save, X, Search, User, Trash2, Bot } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, XCircle, Plus, Edit2, Save, X, Search, User, Trash2, Bot, Settings } from 'lucide-react';
 
 interface AgentEntry {
   id: string;
@@ -8,55 +8,105 @@ interface AgentEntry {
   internalOwner: string;
   estimatedTimeline: string;
   dependencies: string;
+  [key: string]: any;
+}
+
+interface ColumnConfig {
+  key: string;
+  label: string;
+  type: 'text' | 'boolean' | 'textarea';
 }
 
 const AgentTracker: React.FC = () => {
-  const [agents, setAgents] = useState<AgentEntry[]>([
-    {
-      id: '1',
-      agentName: 'CxO Concierge',
-      demoReady: true,
-      internalOwner: 'Chinmoy, Ashvath',
-      estimatedTimeline: 'Ready',
-      dependencies: 'None'
-    },
-    {
-      id: '2',
-      agentName: 'Personal Finance Assistant',
-      demoReady: true,
-      internalOwner: 'Chinmoy',
-      estimatedTimeline: 'Ready',
-      dependencies: 'None'
-    },
-    {
-      id: '3',
-      agentName: 'RM Wealth Assistant',
-      demoReady: true,
-      internalOwner: 'Vignesh GM, Arun Changotra',
-      estimatedTimeline: 'Ready',
-      dependencies: 'None'
-    },
-    {
-      id: '4',
-      agentName: 'CFO Earnings Analyst',
-      demoReady: false,
-      internalOwner: 'Vignesh GM, Arun Changotra',
-      estimatedTimeline: '2 weeks',
-      dependencies: 'Data integration pending'
-    }
+  const [agents, setAgents] = useState<AgentEntry[]>([]);
+  const [columns, setColumns] = useState<ColumnConfig[]>([
+    { key: 'agentName', label: 'Agent Name', type: 'text' },
+    { key: 'demoReady', label: 'Demo Ready', type: 'boolean' },
+    { key: 'internalOwner', label: 'Internal Owner', type: 'text' },
+    { key: 'estimatedTimeline', label: 'Estimated Timeline', type: 'text' },
+    { key: 'dependencies', label: 'Dependencies', type: 'textarea' }
   ]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<AgentEntry | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newAgent, setNewAgent] = useState<Omit<AgentEntry, 'id'>>({
+  const [editingHeader, setEditingHeader] = useState<string | null>(null);
+  const [headerEditValue, setHeaderEditValue] = useState('');
+  
+  // Multiple filters
+  const [filters, setFilters] = useState({
+    search: '',
     agentName: '',
-    demoReady: false,
     internalOwner: '',
     estimatedTimeline: '',
-    dependencies: ''
+    dependencies: '',
+    demoReady: ''
   });
+  
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddColumnForm, setShowAddColumnForm] = useState(false);
+  const [newColumnName, setNewColumnName] = useState('');
+  const [newColumnType, setNewColumnType] = useState<'text' | 'boolean' | 'textarea'>('text');
+  const [newAgent, setNewAgent] = useState<Partial<AgentEntry>>({});
+
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const savedAgents = localStorage.getItem('agents');
+    const savedColumns = localStorage.getItem('agentColumns');
+    
+    if (savedAgents) {
+      setAgents(JSON.parse(savedAgents));
+    } else {
+      // Default data
+      const defaultAgents = [
+        {
+          id: '1',
+          agentName: 'CxO Concierge',
+          demoReady: true,
+          internalOwner: 'Chinmoy, Ashvath',
+          estimatedTimeline: 'Ready',
+          dependencies: 'None'
+        },
+        {
+          id: '2',
+          agentName: 'Personal Finance Assistant',
+          demoReady: true,
+          internalOwner: 'Chinmoy',
+          estimatedTimeline: 'Ready',
+          dependencies: 'None'
+        },
+        {
+          id: '3',
+          agentName: 'RM Wealth Assistant',
+          demoReady: true,
+          internalOwner: 'Vignesh GM, Arun Changotra',
+          estimatedTimeline: 'Ready',
+          dependencies: 'None'
+        },
+        {
+          id: '4',
+          agentName: 'CFO Earnings Analyst',
+          demoReady: false,
+          internalOwner: 'Vignesh GM, Arun Changotra',
+          estimatedTimeline: '2 weeks',
+          dependencies: 'Data integration pending'
+        }
+      ];
+      setAgents(defaultAgents);
+    }
+    
+    if (savedColumns) {
+      setColumns(JSON.parse(savedColumns));
+    }
+  }, []);
+
+  // Save data to localStorage whenever agents or columns change
+  useEffect(() => {
+    localStorage.setItem('agents', JSON.stringify(agents));
+  }, [agents]);
+
+  useEffect(() => {
+    localStorage.setItem('agentColumns', JSON.stringify(columns));
+  }, [columns]);
 
   const handleEdit = (agent: AgentEntry) => {
     setEditingId(agent.id);
@@ -84,28 +134,140 @@ const AgentTracker: React.FC = () => {
     }
   };
 
+  const handleHeaderEdit = (columnKey: string, currentLabel: string) => {
+    setEditingHeader(columnKey);
+    setHeaderEditValue(currentLabel);
+  };
+
+  const handleHeaderSave = (columnKey: string) => {
+    setColumns(columns.map(col => 
+      col.key === columnKey ? { ...col, label: headerEditValue } : col
+    ));
+    setEditingHeader(null);
+    setHeaderEditValue('');
+  };
+
+  const handleAddColumn = () => {
+    if (newColumnName.trim()) {
+      const newColumn: ColumnConfig = {
+        key: newColumnName.toLowerCase().replace(/\s+/g, '_'),
+        label: newColumnName,
+        type: newColumnType
+      };
+      setColumns([...columns, newColumn]);
+      
+      // Add empty values for existing agents
+      setAgents(agents.map(agent => ({
+        ...agent,
+        [newColumn.key]: newColumn.type === 'boolean' ? false : ''
+      })));
+      
+      setNewColumnName('');
+      setNewColumnType('text');
+      setShowAddColumnForm(false);
+    }
+  };
+
   const handleAddAgent = () => {
-    if (newAgent.agentName && newAgent.internalOwner) {
+    const hasRequiredFields = columns.some(col => newAgent[col.key] !== undefined && newAgent[col.key] !== '');
+    if (hasRequiredFields) {
       const agent: AgentEntry = {
-        ...newAgent,
-        id: Date.now().toString()
+        id: Date.now().toString(),
+        ...columns.reduce((acc, col) => ({
+          ...acc,
+          [col.key]: newAgent[col.key] !== undefined ? newAgent[col.key] : (col.type === 'boolean' ? false : '')
+        }), {})
       };
       setAgents([...agents, agent]);
-      setNewAgent({
-        agentName: '',
-        demoReady: false,
-        internalOwner: '',
-        estimatedTimeline: '',
-        dependencies: ''
-      });
+      setNewAgent({});
       setShowAddForm(false);
     }
   };
 
-  const filteredAgents = agents.filter(agent =>
-    agent.agentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    agent.internalOwner.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleFilterChange = (filterKey: string, value: string) => {
+    setFilters(prev => ({ ...prev, [filterKey]: value }));
+  };
+
+  const filteredAgents = agents.filter(agent => {
+    const matchesSearch = filters.search === '' || 
+      Object.values(agent).some(value => 
+        String(value).toLowerCase().includes(filters.search.toLowerCase())
+      );
+    
+    const matchesFilters = Object.entries(filters).every(([key, value]) => {
+      if (key === 'search' || value === '') return true;
+      if (key === 'demoReady') {
+        if (value === 'true') return agent[key] === true;
+        if (value === 'false') return agent[key] === false;
+        return true;
+      }
+      return String(agent[key] || '').toLowerCase().includes(value.toLowerCase());
+    });
+    
+    return matchesSearch && matchesFilters;
+  });
+
+  const renderCell = (agent: AgentEntry, column: ColumnConfig) => {
+    if (editingId === agent.id) {
+      if (column.type === 'boolean') {
+        return (
+          <input
+            type="checkbox"
+            checked={editForm?.[column.key] || false}
+            onChange={(e) => setEditForm({ ...editForm!, [column.key]: e.target.checked })}
+            className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+          />
+        );
+      } else if (column.type === 'textarea') {
+        return (
+          <textarea
+            value={editForm?.[column.key] || ''}
+            onChange={(e) => setEditForm({ ...editForm!, [column.key]: e.target.value })}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            rows={1}
+          />
+        );
+      } else {
+        return (
+          <input
+            type="text"
+            value={editForm?.[column.key] || ''}
+            onChange={(e) => setEditForm({ ...editForm!, [column.key]: e.target.value })}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          />
+        );
+      }
+    } else {
+      const value = agent[column.key];
+      if (column.type === 'boolean') {
+        return (
+          <div className="flex items-center">
+            {value ? (
+              <CheckCircle className="w-5 h-5 text-green-500" />
+            ) : (
+              <XCircle className="w-5 h-5 text-red-500" />
+            )}
+            <span className={`ml-2 text-sm font-semibold ${value ? 'text-green-700' : 'text-red-700'}`}>
+              {value ? 'Yes' : 'No'}
+            </span>
+          </div>
+        );
+      } else if (column.key === 'internalOwner') {
+        return (
+          <div className="text-sm text-blue-600 font-medium flex items-center">
+            <User className="w-4 h-4 text-blue-500 mr-2" />
+            {value}
+          </div>
+        );
+      } else if (column.key === 'agentName') {
+        return <div className="text-sm font-semibold text-gray-900">{value}</div>;
+      } else if (column.key === 'estimatedTimeline') {
+        return <div className="text-sm text-amber-600 font-medium">{value}</div>;
+      } else {
+        return <div className="text-sm text-gray-600 font-medium">{value}</div>;
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -118,82 +280,146 @@ const AgentTracker: React.FC = () => {
             Agent Readiness & Deployment Tracker
           </h2>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Agent</span>
-        </button>
-      </div>
-
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search agents or owners..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
-          />
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setShowAddColumnForm(true)}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+          >
+            <Settings className="w-4 h-4" />
+            <span>Add Column</span>
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Agent</span>
+          </button>
         </div>
       </div>
 
+      {/* Multiple Filters */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <h3 className="text-lg font-semibold mb-3 text-gray-900">Filters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search all fields..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            />
+          </div>
+          {columns.map(column => (
+            column.type === 'boolean' ? (
+              <select
+                key={column.key}
+                value={filters[column.key] || ''}
+                onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="">All {column.label}</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            ) : (
+              <input
+                key={column.key}
+                type="text"
+                placeholder={`Filter by ${column.label}...`}
+                value={filters[column.key] || ''}
+                onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            )
+          ))}
+        </div>
+      </div>
+
+      {/* Add Column Form */}
+      {showAddColumnForm && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900">Add New Column</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Column Name</label>
+              <input
+                type="text"
+                value={newColumnName}
+                onChange={(e) => setNewColumnName(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                placeholder="Enter column name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Column Type</label>
+              <select
+                value={newColumnType}
+                onChange={(e) => setNewColumnType(e.target.value as 'text' | 'boolean' | 'textarea')}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="text">Text</option>
+                <option value="textarea">Textarea</option>
+                <option value="boolean">Yes/No</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-3 mt-4">
+            <button
+              onClick={() => setShowAddColumnForm(false)}
+              className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddColumn}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Add Column
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Agent Form */}
       {showAddForm && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-xl font-semibold mb-4 text-gray-900">Add New Agent</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Agent Name</label>
-              <input
-                type="text"
-                value={newAgent.agentName}
-                onChange={(e) => setNewAgent({ ...newAgent, agentName: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter agent name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Internal Owner</label>
-              <input
-                type="text"
-                value={newAgent.internalOwner}
-                onChange={(e) => setNewAgent({ ...newAgent, internalOwner: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter internal owner(s)"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Timeline</label>
-              <input
-                type="text"
-                value={newAgent.estimatedTimeline}
-                onChange={(e) => setNewAgent({ ...newAgent, estimatedTimeline: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter timeline"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dependencies</label>
-              <input
-                type="text"
-                value={newAgent.dependencies}
-                onChange={(e) => setNewAgent({ ...newAgent, dependencies: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter dependencies"
-              />
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="demoReady"
-                checked={newAgent.demoReady}
-                onChange={(e) => setNewAgent({ ...newAgent, demoReady: e.target.checked })}
-                className="mr-2 h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-              />
-              <label htmlFor="demoReady" className="text-sm font-medium text-gray-700">Demo Ready</label>
-            </div>
+            {columns.map(column => (
+              <div key={column.key}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{column.label}</label>
+                {column.type === 'boolean' ? (
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={newAgent[column.key] as boolean || false}
+                      onChange={(e) => setNewAgent({ ...newAgent, [column.key]: e.target.checked })}
+                      className="mr-2 h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <label className="text-sm font-medium text-gray-700">{column.label}</label>
+                  </div>
+                ) : column.type === 'textarea' ? (
+                  <textarea
+                    value={newAgent[column.key] as string || ''}
+                    onChange={(e) => setNewAgent({ ...newAgent, [column.key]: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder={`Enter ${column.label.toLowerCase()}`}
+                    rows={2}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={newAgent[column.key] as string || ''}
+                    onChange={(e) => setNewAgent({ ...newAgent, [column.key]: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder={`Enter ${column.label.toLowerCase()}`}
+                  />
+                )}
+              </div>
+            ))}
           </div>
           <div className="flex justify-end space-x-3 mt-4">
             <button
@@ -212,26 +438,49 @@ const AgentTracker: React.FC = () => {
         </div>
       )}
 
+      {/* Table */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900 uppercase tracking-wider">
-                  Agent Name
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900 uppercase tracking-wider">
-                  Demo Ready
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900 uppercase tracking-wider">
-                  Internal Owner
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900 uppercase tracking-wider">
-                  Estimated Timeline
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900 uppercase tracking-wider">
-                  Dependencies
-                </th>
+                {columns.map((column) => (
+                  <th key={column.key} className="px-6 py-4 text-left text-sm font-medium text-gray-900 uppercase tracking-wider">
+                    {editingHeader === column.key ? (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={headerEditValue}
+                          onChange={(e) => setHeaderEditValue(e.target.value)}
+                          className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-green-500"
+                          onKeyPress={(e) => e.key === 'Enter' && handleHeaderSave(column.key)}
+                        />
+                        <button
+                          onClick={() => handleHeaderSave(column.key)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <Save className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setEditingHeader(null)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <span>{column.label}</span>
+                        <button
+                          onClick={() => handleHeaderEdit(column.key, column.label)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </th>
+                ))}
                 <th className="px-6 py-4 text-right text-sm font-medium text-gray-900 uppercase tracking-wider">
                   Actions
                 </th>
@@ -240,78 +489,11 @@ const AgentTracker: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAgents.map((agent) => (
                 <tr key={agent.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingId === agent.id ? (
-                      <input
-                        type="text"
-                        value={editForm?.agentName || ''}
-                        onChange={(e) => setEditForm({ ...editForm!, agentName: e.target.value })}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      />
-                    ) : (
-                      <div className="text-sm font-semibold text-gray-900">{agent.agentName}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingId === agent.id ? (
-                      <input
-                        type="checkbox"
-                        checked={editForm?.demoReady || false}
-                        onChange={(e) => setEditForm({ ...editForm!, demoReady: e.target.checked })}
-                        className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                      />
-                    ) : (
-                      <div className="flex items-center">
-                        {agent.demoReady ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-500" />
-                        )}
-                        <span className={`ml-2 text-sm font-semibold ${agent.demoReady ? 'text-green-700' : 'text-red-700'}`}>
-                          {agent.demoReady ? 'Yes' : 'No'}
-                        </span>
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    {editingId === agent.id ? (
-                      <input
-                        type="text"
-                        value={editForm?.internalOwner || ''}
-                        onChange={(e) => setEditForm({ ...editForm!, internalOwner: e.target.value })}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      />
-                    ) : (
-                      <div className="text-sm text-blue-600 font-medium flex items-center">
-                        <User className="w-4 h-4 text-blue-500 mr-2" />
-                        {agent.internalOwner}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingId === agent.id ? (
-                      <input
-                        type="text"
-                        value={editForm?.estimatedTimeline || ''}
-                        onChange={(e) => setEditForm({ ...editForm!, estimatedTimeline: e.target.value })}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      />
-                    ) : (
-                      <div className="text-sm text-amber-600 font-medium">{agent.estimatedTimeline}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    {editingId === agent.id ? (
-                      <textarea
-                        value={editForm?.dependencies || ''}
-                        onChange={(e) => setEditForm({ ...editForm!, dependencies: e.target.value })}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        rows={1}
-                      />
-                    ) : (
-                      <div className="text-sm text-gray-600 font-medium">{agent.dependencies}</div>
-                    )}
-                  </td>
+                  {columns.map((column) => (
+                    <td key={column.key} className="px-6 py-4 whitespace-nowrap">
+                      {renderCell(agent, column)}
+                    </td>
+                  ))}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     {editingId === agent.id ? (
                       <div className="flex justify-end space-x-3">
