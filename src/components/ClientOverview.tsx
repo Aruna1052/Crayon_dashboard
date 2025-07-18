@@ -46,7 +46,22 @@ const ClientOverview: React.FC = () => {
     const savedColumns = localStorage.getItem('clientColumns');
     
     if (savedClients) {
-      setClients(JSON.parse(savedClients));
+      try {
+        setClients(JSON.parse(savedClients));
+      } catch (error) {
+        console.error('Error parsing saved clients:', error);
+        // Set default data if parsing fails
+        const defaultClients = [
+          {
+            id: '1',
+            clientName: 'ADIB',
+            agentsProposed: 'CxO Concierge, PFM, RM Wealth Assistant, CFO Earnings Analyst',
+            lastMeetingDate: '2024-08-12'
+          }
+        ];
+        setClients(defaultClients);
+        localStorage.setItem('clients', JSON.stringify(defaultClients));
+      }
     } else {
       // Default data
       const defaultClients = [
@@ -58,20 +73,32 @@ const ClientOverview: React.FC = () => {
         }
       ];
       setClients(defaultClients);
+      localStorage.setItem('clients', JSON.stringify(defaultClients));
     }
     
     if (savedColumns) {
-      setColumns(JSON.parse(savedColumns));
+      try {
+        setColumns(JSON.parse(savedColumns));
+      } catch (error) {
+        console.error('Error parsing saved columns:', error);
+        localStorage.setItem('clientColumns', JSON.stringify(columns));
+      }
+    } else {
+      localStorage.setItem('clientColumns', JSON.stringify(columns));
     }
   }, []);
 
   // Save data to localStorage whenever clients or columns change
   useEffect(() => {
-    localStorage.setItem('clients', JSON.stringify(clients));
+    if (clients.length > 0) {
+      localStorage.setItem('clients', JSON.stringify(clients));
+    }
   }, [clients]);
 
   useEffect(() => {
-    localStorage.setItem('clientColumns', JSON.stringify(columns));
+    if (columns.length > 0) {
+      localStorage.setItem('clientColumns', JSON.stringify(columns));
+    }
   }, [columns]);
 
   const handleEdit = (client: ClientEntry) => {
@@ -81,9 +108,11 @@ const ClientOverview: React.FC = () => {
 
   const handleSave = () => {
     if (editForm) {
-      setClients(clients.map(client => 
+      const updatedClients = clients.map(client => 
         client.id === editForm.id ? editForm : client
-      ));
+      );
+      setClients(updatedClients);
+      localStorage.setItem('clients', JSON.stringify(updatedClients));
       setEditingId(null);
       setEditForm(null);
     }
@@ -96,7 +125,9 @@ const ClientOverview: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this client?')) {
-      setClients(clients.filter(client => client.id !== id));
+      const updatedClients = clients.filter(client => client.id !== id);
+      setClients(updatedClients);
+      localStorage.setItem('clients', JSON.stringify(updatedClients));
     }
   };
 
@@ -106,11 +137,30 @@ const ClientOverview: React.FC = () => {
   };
 
   const handleHeaderSave = (columnKey: string) => {
-    setColumns(columns.map(col => 
+    const updatedColumns = columns.map(col => 
       col.key === columnKey ? { ...col, label: headerEditValue } : col
-    ));
+    );
+    setColumns(updatedColumns);
+    localStorage.setItem('clientColumns', JSON.stringify(updatedColumns));
     setEditingHeader(null);
     setHeaderEditValue('');
+  };
+
+  const handleHeaderDelete = (columnKey: string) => {
+    if (window.confirm('Are you sure you want to delete this column? This will remove all data in this column.')) {
+      const updatedColumns = columns.filter(col => col.key !== columnKey);
+      setColumns(updatedColumns);
+      
+      // Remove the column data from all clients
+      const updatedClients = clients.map(client => {
+        const { [columnKey]: removed, ...rest } = client;
+        return rest;
+      });
+      setClients(updatedClients);
+      
+      localStorage.setItem('clientColumns', JSON.stringify(updatedColumns));
+      localStorage.setItem('clients', JSON.stringify(updatedClients));
+    }
   };
 
   const handleAddColumn = () => {
@@ -120,13 +170,18 @@ const ClientOverview: React.FC = () => {
         label: newColumnName,
         type: newColumnType
       };
-      setColumns([...columns, newColumn]);
+      const updatedColumns = [...columns, newColumn];
+      setColumns(updatedColumns);
       
       // Add empty values for existing clients
-      setClients(clients.map(client => ({
+      const updatedClients = clients.map(client => ({
         ...client,
         [newColumn.key]: ''
-      })));
+      }));
+      setClients(updatedClients);
+      
+      localStorage.setItem('clientColumns', JSON.stringify(updatedColumns));
+      localStorage.setItem('clients', JSON.stringify(updatedClients));
       
       setNewColumnName('');
       setNewColumnType('text');
@@ -144,7 +199,9 @@ const ClientOverview: React.FC = () => {
           [col.key]: newClient[col.key] || ''
         }), {})
       };
-      setClients([...clients, client]);
+      const updatedClients = [...clients, client];
+      setClients(updatedClients);
+      localStorage.setItem('clients', JSON.stringify(updatedClients));
       setNewClient({});
       setShowAddForm(false);
     }
@@ -372,23 +429,23 @@ const ClientOverview: React.FC = () => {
                         >
                           <X className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => handleHeaderDelete(column.key)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     ) : (
-                      <div className="flex items-center space-x-2">
+                      <div 
+                        className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                        onClick={() => handleHeaderEdit(column.key, column.label)}
+                      >
                         <span>{column.label}</span>
-                        <button
-                          onClick={() => handleHeaderEdit(column.key, column.label)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </button>
                       </div>
                     )}
                   </th>
                 ))}
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-900 uppercase tracking-wider">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -399,39 +456,6 @@ const ClientOverview: React.FC = () => {
                       {renderCell(client, column)}
                     </td>
                   ))}
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {editingId === client.id ? (
-                      <div className="flex justify-end space-x-3">
-                        <button
-                          onClick={handleSave}
-                          className="text-green-600 hover:text-green-800 p-1"
-                        >
-                          <Save className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={handleCancel}
-                          className="text-red-600 hover:text-red-800 p-1"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex justify-end space-x-2">
-                        <button
-                          onClick={() => handleEdit(client)}
-                          className="text-blue-600 hover:text-blue-800 p-1"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(client.id)}
-                          className="text-red-600 hover:text-red-800 p-1"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>

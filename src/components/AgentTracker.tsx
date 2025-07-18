@@ -53,7 +53,48 @@ const AgentTracker: React.FC = () => {
     const savedColumns = localStorage.getItem('agentColumns');
     
     if (savedAgents) {
-      setAgents(JSON.parse(savedAgents));
+      try {
+        setAgents(JSON.parse(savedAgents));
+      } catch (error) {
+        console.error('Error parsing saved agents:', error);
+        // Set default data if parsing fails
+        const defaultAgents = [
+          {
+            id: '1',
+            agentName: 'CxO Concierge',
+            demoReady: true,
+            internalOwner: 'Chinmoy, Ashvath',
+            estimatedTimeline: 'Ready',
+            dependencies: 'None'
+          },
+          {
+            id: '2',
+            agentName: 'Personal Finance Assistant',
+            demoReady: true,
+            internalOwner: 'Chinmoy',
+            estimatedTimeline: 'Ready',
+            dependencies: 'None'
+          },
+          {
+            id: '3',
+            agentName: 'RM Wealth Assistant',
+            demoReady: true,
+            internalOwner: 'Vignesh GM, Arun Changotra',
+            estimatedTimeline: 'Ready',
+            dependencies: 'None'
+          },
+          {
+            id: '4',
+            agentName: 'CFO Earnings Analyst',
+            demoReady: false,
+            internalOwner: 'Vignesh GM, Arun Changotra',
+            estimatedTimeline: '2 weeks',
+            dependencies: 'Data integration pending'
+          }
+        ];
+        setAgents(defaultAgents);
+        localStorage.setItem('agents', JSON.stringify(defaultAgents));
+      }
     } else {
       // Default data
       const defaultAgents = [
@@ -91,20 +132,32 @@ const AgentTracker: React.FC = () => {
         }
       ];
       setAgents(defaultAgents);
+      localStorage.setItem('agents', JSON.stringify(defaultAgents));
     }
     
     if (savedColumns) {
-      setColumns(JSON.parse(savedColumns));
+      try {
+        setColumns(JSON.parse(savedColumns));
+      } catch (error) {
+        console.error('Error parsing saved columns:', error);
+        localStorage.setItem('agentColumns', JSON.stringify(columns));
+      }
+    } else {
+      localStorage.setItem('agentColumns', JSON.stringify(columns));
     }
   }, []);
 
   // Save data to localStorage whenever agents or columns change
   useEffect(() => {
-    localStorage.setItem('agents', JSON.stringify(agents));
+    if (agents.length > 0) {
+      localStorage.setItem('agents', JSON.stringify(agents));
+    }
   }, [agents]);
 
   useEffect(() => {
-    localStorage.setItem('agentColumns', JSON.stringify(columns));
+    if (columns.length > 0) {
+      localStorage.setItem('agentColumns', JSON.stringify(columns));
+    }
   }, [columns]);
 
   const handleEdit = (agent: AgentEntry) => {
@@ -114,9 +167,11 @@ const AgentTracker: React.FC = () => {
 
   const handleSave = () => {
     if (editForm) {
-      setAgents(agents.map(agent => 
+      const updatedAgents = agents.map(agent => 
         agent.id === editForm.id ? editForm : agent
-      ));
+      );
+      setAgents(updatedAgents);
+      localStorage.setItem('agents', JSON.stringify(updatedAgents));
       setEditingId(null);
       setEditForm(null);
     }
@@ -129,7 +184,9 @@ const AgentTracker: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this agent?')) {
-      setAgents(agents.filter(agent => agent.id !== id));
+      const updatedAgents = agents.filter(agent => agent.id !== id);
+      setAgents(updatedAgents);
+      localStorage.setItem('agents', JSON.stringify(updatedAgents));
     }
   };
 
@@ -139,11 +196,30 @@ const AgentTracker: React.FC = () => {
   };
 
   const handleHeaderSave = (columnKey: string) => {
-    setColumns(columns.map(col => 
+    const updatedColumns = columns.map(col => 
       col.key === columnKey ? { ...col, label: headerEditValue } : col
-    ));
+    );
+    setColumns(updatedColumns);
+    localStorage.setItem('agentColumns', JSON.stringify(updatedColumns));
     setEditingHeader(null);
     setHeaderEditValue('');
+  };
+
+  const handleHeaderDelete = (columnKey: string) => {
+    if (window.confirm('Are you sure you want to delete this column? This will remove all data in this column.')) {
+      const updatedColumns = columns.filter(col => col.key !== columnKey);
+      setColumns(updatedColumns);
+      
+      // Remove the column data from all agents
+      const updatedAgents = agents.map(agent => {
+        const { [columnKey]: removed, ...rest } = agent;
+        return rest;
+      });
+      setAgents(updatedAgents);
+      
+      localStorage.setItem('agentColumns', JSON.stringify(updatedColumns));
+      localStorage.setItem('agents', JSON.stringify(updatedAgents));
+    }
   };
 
   const handleAddColumn = () => {
@@ -153,13 +229,18 @@ const AgentTracker: React.FC = () => {
         label: newColumnName,
         type: newColumnType
       };
-      setColumns([...columns, newColumn]);
+      const updatedColumns = [...columns, newColumn];
+      setColumns(updatedColumns);
       
       // Add empty values for existing agents
-      setAgents(agents.map(agent => ({
+      const updatedAgents = agents.map(agent => ({
         ...agent,
         [newColumn.key]: newColumn.type === 'boolean' ? false : ''
-      })));
+      }));
+      setAgents(updatedAgents);
+      
+      localStorage.setItem('agentColumns', JSON.stringify(updatedColumns));
+      localStorage.setItem('agents', JSON.stringify(updatedAgents));
       
       setNewColumnName('');
       setNewColumnType('text');
@@ -177,7 +258,9 @@ const AgentTracker: React.FC = () => {
           [col.key]: newAgent[col.key] !== undefined ? newAgent[col.key] : (col.type === 'boolean' ? false : '')
         }), {})
       };
-      setAgents([...agents, agent]);
+      const updatedAgents = [...agents, agent];
+      setAgents(updatedAgents);
+      localStorage.setItem('agents', JSON.stringify(updatedAgents));
       setNewAgent({});
       setShowAddForm(false);
     }
@@ -452,16 +535,19 @@ const AgentTracker: React.FC = () => {
                         >
                           <X className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => handleHeaderDelete(column.key)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     ) : (
-                      <div className="flex items-center space-x-2">
+                      <div 
+                        className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                        onClick={() => handleHeaderEdit(column.key, column.label)}
+                      >
                         <span>{column.label}</span>
-                        <button
-                          onClick={() => handleHeaderEdit(column.key, column.label)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </button>
                       </div>
                     )}
                   </th>

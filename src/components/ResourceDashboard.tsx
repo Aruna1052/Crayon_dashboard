@@ -55,7 +55,99 @@ const ResourceDashboard: React.FC = () => {
     const savedColumns = localStorage.getItem('resourceColumns');
     
     if (savedResources) {
-      setResources(JSON.parse(savedResources));
+      try {
+        setResources(JSON.parse(savedResources));
+      } catch (error) {
+        console.error('Error parsing saved resources:', error);
+        // Set default data if parsing fails
+        const defaultResources = [
+    { id: '1', fullName: 'Abdul Nawaz MD', stream: 'Product Management', role: 'Product Manager', project1: '', project2: '', project3: '' },
+    { id: '2', fullName: 'Alveena Joyce', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
+    { id: '3', fullName: 'Ambarish Srinivasan', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
+    { id: '4', fullName: 'AnandhKumar Muthukumar', stream: 'Engineering', role: 'Test Engineer', project1: '', project2: '', project3: '' },
+    { id: '5', fullName: 'Anbu Sampath', stream: 'Engineering', role: 'Software Development', project1: '', project2: '', project3: '' },
+    { id: '6', fullName: 'Anirudh S', stream: 'Engineering', role: 'UI Engineer', project1: '', project2: '', project3: '' },
+    { id: '7', fullName: 'Anirudh Sudeendran', stream: 'Data Science & Analytics', role: 'Customer Scientist', project1: '', project2: '', project3: '' },
+    { id: '8', fullName: 'Aravind Mohan', stream: 'Product Management', role: 'User Experience (UX) Design', project1: '', project2: '', project3: '' },
+    { id: '9', fullName: 'Arun Changotra', stream: 'Engineering', role: 'Software Development', project1: '', project2: '', project3: '' },
+    { id: '10', fullName: 'Ashutosh Anand', stream: 'Customer Success', role: 'Customer Success', project1: '', project2: '', project3: '' },
+    { id: '11', fullName: 'Ashvath Narayanan', stream: 'Engineering', role: 'Associate Data Scientist', project1: '', project2: '', project3: '' },
+    { id: '12', fullName: 'Aswin Kumar K G', stream: 'Engineering', role: 'DevOps Engineer', project1: '', project2: '', project3: '' },
+    { id: '13', fullName: 'Babu Christopher Donbosco', stream: 'Operations', role: 'General Office Administration', project1: '', project2: '', project3: '' },
+    { id: '14', fullName: 'Boobalamurugan', stream: 'Data Science & Analytics', role: 'Data Scientist', project1: '', project2: '', project3: '' },
+    { id: '15', fullName: 'Bharathwaj Gopalan', stream: 'Finance', role: 'Finance', project1: '', project2: '', project3: '' },
+    { id: '16', fullName: 'Chakradhar Yerranagari', stream: 'Finance', role: 'Accounting', project1: '', project2: '', project3: '' },
+    { id: '17', fullName: 'Chinmoy Rajurkar', stream: 'Product Management', role: 'Product Manager', project1: '', project2: '', project3: '' },
+    { id: '18', fullName: 'Dhanushya Shankar', stream: 'Data Science & Analytics', role: 'DE / DS', project1: '', project2: '', project3: '' },
+    { id: '19', fullName: 'Dilip Kumar Rajendhiran', stream: 'Data Science & Analytics', role: 'Data Scientist', project1: '', project2: '', project3: '' },
+    { id: '20', fullName: 'Ellakkiaa S', stream: 'Engineering', role: 'Associate Data Scientist', project1: '', project2: '', project3: '' },
+    { id: '21', fullName: 'Gali Poojitha', stream: 'Engineering', role: 'Software Development', project1: '', project2: '', project3: '' },
+    { id: '22', fullName: 'Gomathi S', stream: 'People', role: 'Talent Mgmt. & Engagement', project1: '', project2: '', project3: '' },
+    { id: '23', fullName: 'Grace Lee Hui Min', stream: 'Operations', role: 'General Office Administration', project1: '', project2: '', project3: '' },
+    { id: '24', fullName: 'Harish Jayakumar', stream: 'Project Management', role: 'Business Analyst', project1: '', project2: '', project3: '' },
+    { id: '25', fullName: 'Hariharasudhan S', stream: 'Data Science & Analytics', role: 'Data Scientist', project1: '', project2: '', project3: '' },
+    { id: '26', fullName: 'Indukuru Sai Tharun Reddy', stream: 'Data Science & Analytics', role: 'DE / DS', project1: '', project2: '', project3: '' },
+    { id: '27', fullName: 'Iyyappan S', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
+    { id: '28', fullName: 'James Victor Francis', stream: 'Data Science & Analytics', role: 'Customer Scientist', project1: '', project2: '', project3: '' },
+    { id: '29', fullName: 'Jayaprakash Sundaramurthy', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
+    { id: '30', fullName: 'Joshua Lucas', stream: 'Customer Success', role: 'Customer Success', project1: '', project2: '', project3: '' },
+    { id: '31', fullName: 'Jyotsna Singh', stream: 'Sales', role: 'Partnerships - Bazaar', project1: '', project2: '', project3: '' },
+    { id: '32', fullName: 'Karanveer Singh Bakshi', stream: 'Sales', role: 'Sales', project1: '', project2: '', project3: '' },
+    { id: '33', fullName: 'Karthikeyan N', stream: 'Data Science & Analytics', role: 'DE / DS', project1: '', project2: '', project3: '' },
+    { id: '34', fullName: 'Karunamoorthi Sakthivel', stream: 'Engineering', role: 'UI Engineer', project1: '', project2: '', project3: '' },
+    { id: '35', fullName: 'Kathiravan M', stream: 'Engineering', role: 'Software Development', project1: '', project2: '', project3: '' },
+    { id: '36', fullName: 'Kuldeep Gujar', stream: 'Engineering', role: 'UI Engineer', project1: '', project2: '', project3: '' },
+    { id: '37', fullName: 'Maadhusri Ulaganathan', stream: 'Data Science & Analytics', role: 'Customer Scientist', project1: '', project2: '', project3: '' },
+    { id: '38', fullName: 'Madasamy M', stream: 'Engineering', role: 'UI Engineer', project1: '', project2: '', project3: '' },
+    { id: '39', fullName: 'Meenakshi Priyadharshini B', stream: 'People', role: 'Talent Acquisition', project1: '', project2: '', project3: '' },
+    { id: '40', fullName: 'Meghana Jagadish Upasani', stream: 'Operations', role: 'Legal', project1: '', project2: '', project3: '' },
+    { id: '41', fullName: 'Naveenkumar Sivaprakasam', stream: 'Engineering', role: 'Software Development', project1: '', project2: '', project3: '' },
+    { id: '42', fullName: 'Mithuna Jogan', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
+    { id: '43', fullName: 'Parkhiya Dixitkumar Arvindbhai', stream: 'Engineering', role: 'UI Engineer', project1: '', project2: '', project3: '' },
+    { id: '44', fullName: 'Prajjwal Kumar', stream: 'Data Science & Analytics', role: 'Customer Scientist', project1: '', project2: '', project3: '' },
+    { id: '45', fullName: 'Praveen Selvaraj', stream: 'Data Science & Analytics', role: 'Data Scientist', project1: '', project2: '', project3: '' },
+    { id: '46', fullName: 'Priyadharsshni S', stream: 'Data Science & Analytics', role: 'Data Scientist', project1: '', project2: '', project3: '' },
+    { id: '47', fullName: 'Priyanshu Mishra', stream: 'Customer Success', role: 'Customer Success', project1: '', project2: '', project3: '' },
+    { id: '48', fullName: 'Ragunath Venkatraman', stream: 'Engineering', role: 'Software Development', project1: '', project2: '', project3: '' },
+    { id: '49', fullName: 'Rai Pramanik', stream: 'People', role: 'Talent Mgmt. & Engagement', project1: '', project2: '', project3: '' },
+    { id: '50', fullName: 'Ravi Sundar', stream: 'Data Science & Analytics', role: 'Data Scientist', project1: '', project2: '', project3: '' },
+    { id: '51', fullName: 'Rooban Chakravarthy', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
+    { id: '52', fullName: 'Sandeep Guruvindapalli', stream: 'Product Management', role: 'Product Manager', project1: '', project2: '', project3: '' },
+    { id: '53', fullName: 'Sangeetha Thangaraj', stream: 'Product Management', role: 'User Experience (UX) Design', project1: '', project2: '', project3: '' },
+    { id: '54', fullName: 'Sanjana Krishnan', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
+    { id: '55', fullName: 'Saran Kumar', stream: 'Data Science & Analytics', role: 'DE / DS', project1: '', project2: '', project3: '' },
+    { id: '56', fullName: 'Saravanan R', stream: 'IT', role: 'General IT Infrastructure Systems Administration', project1: '', project2: '', project3: '' },
+    { id: '57', fullName: 'Satheesh Kumar Hari', stream: 'IT', role: 'General IT Infrastructure Systems Administration', project1: '', project2: '', project3: '' },
+    { id: '58', fullName: 'Sethu Ramalingam', stream: 'Customer Success', role: 'Customer Success', project1: '', project2: '', project3: '' },
+    { id: '59', fullName: 'Shad Perwez', stream: 'Data Science & Analytics', role: 'ML Ops Engineer', project1: '', project2: '', project3: '' },
+    { id: '60', fullName: 'Shankar Ganesh', stream: 'Project Management', role: 'Delivery Management', project1: '', project2: '', project3: '' },
+    { id: '61', fullName: 'Shilpa Sudarsanakumar', stream: 'Project Management', role: 'Business Analyst', project1: '', project2: '', project3: '' },
+    { id: '62', fullName: 'Shipra Paul', stream: 'Operations', role: 'General Regulatory Affairs', project1: '', project2: '', project3: '' },
+    { id: '63', fullName: 'Shriram Suresh Kumar', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
+    { id: '64', fullName: 'Siranjeevi Shanmugam', stream: 'Engineering', role: 'Test Engineer', project1: '', project2: '', project3: '' },
+    { id: '65', fullName: 'Sivaseelan G', stream: 'Engineering', role: 'Software Development', project1: '', project2: '', project3: '' },
+    { id: '66', fullName: 'Smrithi Sundar', stream: 'Data Science & Analytics', role: 'Customer Scientist', project1: '', project2: '', project3: '' },
+    { id: '67', fullName: 'Sri Bharathan', stream: 'Project Management', role: 'Delivery Management', project1: '', project2: '', project3: '' },
+    { id: '68', fullName: 'Srinivas Puniyakoti', stream: 'Data Science & Analytics', role: 'Customer Scientist', project1: '', project2: '', project3: '' },
+    { id: '69', fullName: 'Srinivasan D', stream: 'Product Management', role: 'User Experience (UX) Design', project1: '', project2: '', project3: '' },
+    { id: '70', fullName: 'Subramani Srinivasan', stream: 'Finance', role: 'Accounting', project1: '', project2: '', project3: '' },
+    { id: '71', fullName: 'Sujee Shalini', stream: 'People', role: 'Talent Acquisition', project1: '', project2: '', project3: '' },
+    { id: '72', fullName: 'Suraj Kesavan', stream: 'Data Science & Analytics', role: 'Data Scientist', project1: '', project2: '', project3: '' },
+    { id: '73', fullName: 'Suresh V Shankar', stream: 'Founder', role: 'Executive', project1: '', project2: '', project3: '' },
+    { id: '74', fullName: 'Tejeswini Kashyappan', stream: 'Product Management', role: 'Product Manager', project1: '', project2: '', project3: '' },
+    { id: '75', fullName: 'Thaanish Ahamed', stream: 'Data Science & Analytics', role: 'DE / DS', project1: '', project2: '', project3: '' },
+    { id: '76', fullName: 'Thahazeef Ali', stream: 'Engineering', role: 'UI Engineer', project1: '', project2: '', project3: '' },
+    { id: '77', fullName: 'Tiyasa Saha', stream: 'Pre-Sales', role: 'Sales Engineer', project1: '', project2: '', project3: '' },
+    { id: '78', fullName: 'Vignesh G', stream: 'Data Science & Analytics', role: 'Customer Scientist', project1: '', project2: '', project3: '' },
+    { id: '79', fullName: 'Vinayak Ganapuram', stream: 'Engineering', role: 'Software Development', project1: '', project2: '', project3: '' },
+    { id: '80', fullName: 'Vinodh Rajamohan', stream: 'Engineering', role: 'Data Engineer', project1: '', project2: '', project3: '' },
+    { id: '81', fullName: 'Vishnu C Bhattatherypad', stream: 'Customer Success', role: 'Customer Success', project1: '', project2: '', project3: '' },
+    { id: '82', fullName: 'Vishnupriya Jeevanram', stream: 'Engineering', role: 'Software Development', project1: '', project2: '', project3: '' },
+    { id: '83', fullName: 'Vivek Muraleedharan', stream: 'Engineering', role: 'Data Scientist', project1: '', project2: '', project3: '' }
+        ];
+        setResources(defaultResources);
+        localStorage.setItem('resources', JSON.stringify(defaultResources));
+      }
     } else {
       // Default data
       const defaultResources = [
@@ -144,20 +236,32 @@ const ResourceDashboard: React.FC = () => {
     { id: '83', fullName: 'Vivek Muraleedharan', stream: 'Engineering', role: 'Data Scientist', project1: '', project2: '', project3: '' }
       ];
       setResources(defaultResources);
+      localStorage.setItem('resources', JSON.stringify(defaultResources));
     }
     
     if (savedColumns) {
-      setColumns(JSON.parse(savedColumns));
+      try {
+        setColumns(JSON.parse(savedColumns));
+      } catch (error) {
+        console.error('Error parsing saved columns:', error);
+        localStorage.setItem('resourceColumns', JSON.stringify(columns));
+      }
+    } else {
+      localStorage.setItem('resourceColumns', JSON.stringify(columns));
     }
   }, []);
 
   // Save data to localStorage whenever resources or columns change
   useEffect(() => {
-    localStorage.setItem('resources', JSON.stringify(resources));
+    if (resources.length > 0) {
+      localStorage.setItem('resources', JSON.stringify(resources));
+    }
   }, [resources]);
 
   useEffect(() => {
-    localStorage.setItem('resourceColumns', JSON.stringify(columns));
+    if (columns.length > 0) {
+      localStorage.setItem('resourceColumns', JSON.stringify(columns));
+    }
   }, [columns]);
 
   // Update stream options when resources change
@@ -171,8 +275,8 @@ const ResourceDashboard: React.FC = () => {
   // List of deployed resources (exact names as specified)
   const deployedResources = [
     'Ambarish Srinivasan',
-    'Anirudh Sudeendran',
-    'Dilip  Kumar Rajendhiran',
+    'Anirudh Sudeendran', 
+    'Dilip Kumar Rajendhiran',
     'James Victor Francis',
     'Prajjwal Kumar',
     'Sandeep Guruvindapalli',
@@ -189,9 +293,11 @@ const ResourceDashboard: React.FC = () => {
 
   const handleSave = () => {
     if (editForm) {
-      setResources(resources.map(resource => 
+      const updatedResources = resources.map(resource => 
         resource.id === editForm.id ? editForm : resource
-      ));
+      );
+      setResources(updatedResources);
+      localStorage.setItem('resources', JSON.stringify(updatedResources));
       setEditingId(null);
       setEditForm(null);
     }
@@ -208,11 +314,30 @@ const ResourceDashboard: React.FC = () => {
   };
 
   const handleHeaderSave = (columnKey: string) => {
-    setColumns(columns.map(col => 
+    const updatedColumns = columns.map(col => 
       col.key === columnKey ? { ...col, label: headerEditValue } : col
-    ));
+    );
+    setColumns(updatedColumns);
+    localStorage.setItem('resourceColumns', JSON.stringify(updatedColumns));
     setEditingHeader(null);
     setHeaderEditValue('');
+  };
+
+  const handleHeaderDelete = (columnKey: string) => {
+    if (window.confirm('Are you sure you want to delete this column? This will remove all data in this column.')) {
+      const updatedColumns = columns.filter(col => col.key !== columnKey);
+      setColumns(updatedColumns);
+      
+      // Remove the column data from all resources
+      const updatedResources = resources.map(resource => {
+        const { [columnKey]: removed, ...rest } = resource;
+        return rest;
+      });
+      setResources(updatedResources);
+      
+      localStorage.setItem('resourceColumns', JSON.stringify(updatedColumns));
+      localStorage.setItem('resources', JSON.stringify(updatedResources));
+    }
   };
 
   const handleAddColumn = () => {
@@ -223,13 +348,18 @@ const ResourceDashboard: React.FC = () => {
         type: newColumnType,
         options: newColumnType === 'select' ? [] : undefined
       };
-      setColumns([...columns, newColumn]);
+      const updatedColumns = [...columns, newColumn];
+      setColumns(updatedColumns);
       
       // Add empty values for existing resources
-      setResources(resources.map(resource => ({
+      const updatedResources = resources.map(resource => ({
         ...resource,
         [newColumn.key]: ''
-      })));
+      }));
+      setResources(updatedResources);
+      
+      localStorage.setItem('resourceColumns', JSON.stringify(updatedColumns));
+      localStorage.setItem('resources', JSON.stringify(updatedResources));
       
       setNewColumnName('');
       setNewColumnType('text');
@@ -239,7 +369,9 @@ const ResourceDashboard: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this resource?')) {
-      setResources(resources.filter(resource => resource.id !== id));
+      const updatedResources = resources.filter(resource => resource.id !== id);
+      setResources(updatedResources);
+      localStorage.setItem('resources', JSON.stringify(updatedResources));
     }
   };
 
@@ -253,7 +385,9 @@ const ResourceDashboard: React.FC = () => {
           [col.key]: newResource[col.key] || ''
         }), {})
       };
-      setResources([...resources, resource]);
+      const updatedResources = [...resources, resource];
+      setResources(updatedResources);
+      localStorage.setItem('resources', JSON.stringify(updatedResources));
       setNewResource({});
       setShowAddForm(false);
     }
@@ -552,16 +686,19 @@ const ResourceDashboard: React.FC = () => {
                         >
                           <X className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => handleHeaderDelete(column.key)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     ) : (
-                      <div className="flex items-center space-x-2">
+                      <div 
+                        className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                        onClick={() => handleHeaderEdit(column.key, column.label)}
+                      >
                         <span>{column.label}</span>
-                        <button
-                          onClick={() => handleHeaderEdit(column.key, column.label)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </button>
                       </div>
                     )}
                   </th>
