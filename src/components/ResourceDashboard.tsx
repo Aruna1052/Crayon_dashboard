@@ -37,7 +37,6 @@ const ResourceDashboard: React.FC = () => {
   
   // Multiple filters
   const [filters, setFilters] = useState({
-    search: '',
     fullName: '',
     stream: '',
     role: '',
@@ -265,13 +264,8 @@ const ResourceDashboard: React.FC = () => {
   };
 
   const filteredResources = resources.filter(resource => {
-    const matchesSearch = filters.search === '' || 
-      Object.values(resource).some(value => 
-        String(value).toLowerCase().includes(filters.search.toLowerCase())
-      );
-    
-    const matchesFilters = Object.entries(filters).every(([key, value]) => {
-      if (key === 'search' || value === '') return true;
+    return Object.entries(filters).every(([key, value]) => {
+      if (value === '') return true;
       if (key === 'project') {
         return resource.project1?.toLowerCase().includes(value.toLowerCase()) ||
                resource.project2?.toLowerCase().includes(value.toLowerCase()) ||
@@ -279,8 +273,6 @@ const ResourceDashboard: React.FC = () => {
       }
       return String(resource[key] || '').toLowerCase().includes(value.toLowerCase());
     });
-    
-    return matchesSearch && matchesFilters;
   });
 
   const isDeployed = (fullName: string) => {
@@ -394,17 +386,7 @@ const ResourceDashboard: React.FC = () => {
       {/* Multiple Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold mb-3 text-gray-900">Filters</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search all fields..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-            />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <input
             type="text"
             placeholder="Filter by name..."
@@ -431,7 +413,7 @@ const ResourceDashboard: React.FC = () => {
           />
           <input
             type="text"
-            placeholder="Filter by project..."
+            placeholder="Filter by projects..."
             value={filters.project}
             onChange={(e) => handleFilterChange('project', e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
@@ -440,50 +422,6 @@ const ResourceDashboard: React.FC = () => {
       </div>
 
       {/* Add Column Form */}
-      {showAddColumnForm && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-xl font-semibold mb-4 text-gray-900">Add New Column</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Column Name</label>
-              <input
-                type="text"
-                value={newColumnName}
-                onChange={(e) => setNewColumnName(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Enter column name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Column Type</label>
-              <select
-                value={newColumnType}
-                onChange={(e) => setNewColumnType(e.target.value as 'text' | 'select')}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="text">Text</option>
-                <option value="select">Dropdown</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex justify-end space-x-3 mt-4">
-            <button
-              onClick={() => setShowAddColumnForm(false)}
-              className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddColumn}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              Add Column
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Add Resource Form */}
       {showAddForm && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-xl font-semibold mb-4 text-gray-900">Add New Resource</h3>
@@ -531,8 +469,62 @@ const ResourceDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Add Column Form */}
+      {showAddColumnForm && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900">Add New Column</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Column Name</label>
+              <input
+                type="text"
+                value={newColumnName}
+                onChange={(e) => setNewColumnName(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                placeholder="Enter column name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Column Type</label>
+              <select
+                value={newColumnType}
+                onChange={(e) => setNewColumnType(e.target.value as 'text' | 'select')}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="text">Text</option>
+                <option value="select">Dropdown</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-3 mt-4">
+            <button
+              onClick={() => setShowAddColumnForm(false)}
+              className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddColumn}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Add Column
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Resource Entries</h3>
+          <button
+            onClick={() => setShowAddColumnForm(true)}
+            className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 transition-colors flex items-center space-x-1"
+          >
+            <Settings className="w-3 h-3" />
+            <span>Add Column</span>
+          </button>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">

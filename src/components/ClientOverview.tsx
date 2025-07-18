@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, Edit2, Save, X, Search, Filter, Trash2, Building2, Settings } from 'lucide-react';
+import { Calendar, Plus, Edit2, Save, X, Filter, Trash2, Building2, Settings } from 'lucide-react';
 
 interface ClientEntry {
   id: string;
@@ -30,10 +30,8 @@ const ClientOverview: React.FC = () => {
   
   // Multiple filters
   const [filters, setFilters] = useState({
-    search: '',
     clientName: '',
-    agentsProposed: '',
-    lastMeetingDate: ''
+    agentsProposed: ''
   });
   
   const [showAddForm, setShowAddForm] = useState(false);
@@ -157,17 +155,10 @@ const ClientOverview: React.FC = () => {
   };
 
   const filteredClients = clients.filter(client => {
-    const matchesSearch = filters.search === '' || 
-      Object.values(client).some(value => 
-        String(value).toLowerCase().includes(filters.search.toLowerCase())
-      );
-    
-    const matchesFilters = Object.entries(filters).every(([key, value]) => {
-      if (key === 'search' || value === '') return true;
+    return Object.entries(filters).every(([key, value]) => {
+      if (value === '') return true;
       return String(client[key] || '').toLowerCase().includes(value.toLowerCase());
     });
-    
-    return matchesSearch && matchesFilters;
   });
 
   const renderCell = (client: ClientEntry, column: ColumnConfig) => {
@@ -222,13 +213,6 @@ const ClientOverview: React.FC = () => {
         </div>
         <div className="flex space-x-2">
           <button
-            onClick={() => setShowAddColumnForm(true)}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
-          >
-            <Settings className="w-4 h-4" />
-            <span>Add Column</span>
-          </button>
-          <button
             onClick={() => setShowAddForm(true)}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 shadow-sm"
           >
@@ -238,77 +222,26 @@ const ClientOverview: React.FC = () => {
         </div>
       </div>
 
-      {/* Multiple Filters */}
+      {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold mb-3 text-gray-900">Filters</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search all fields..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          {columns.map(column => (
-            <input
-              key={column.key}
-              type="text"
-              placeholder={`Filter by ${column.label}...`}
-              value={filters[column.key] || ''}
-              onChange={(e) => handleFilterChange(column.key, e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            type="text"
+            placeholder="Filter by Client Name..."
+            value={filters.clientName}
+            onChange={(e) => handleFilterChange('clientName', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <input
+            type="text"
+            placeholder="Filter by Agents Proposed..."
+            value={filters.agentsProposed}
+            onChange={(e) => handleFilterChange('agentsProposed', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
         </div>
       </div>
-
-      {/* Add Column Form */}
-      {showAddColumnForm && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-xl font-semibold mb-4 text-gray-900">Add New Column</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Column Name</label>
-              <input
-                type="text"
-                value={newColumnName}
-                onChange={(e) => setNewColumnName(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Enter column name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Column Type</label>
-              <select
-                value={newColumnType}
-                onChange={(e) => setNewColumnType(e.target.value as 'text' | 'date' | 'textarea')}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="text">Text</option>
-                <option value="textarea">Textarea</option>
-                <option value="date">Date</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex justify-end space-x-3 mt-4">
-            <button
-              onClick={() => setShowAddColumnForm(false)}
-              className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddColumn}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              Add Column
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Add Client Form */}
       {showAddForm && (
@@ -355,8 +288,63 @@ const ClientOverview: React.FC = () => {
         </div>
       )}
 
+      {/* Add Column Form */}
+      {showAddColumnForm && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900">Add New Column</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Column Name</label>
+              <input
+                type="text"
+                value={newColumnName}
+                onChange={(e) => setNewColumnName(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter column name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Column Type</label>
+              <select
+                value={newColumnType}
+                onChange={(e) => setNewColumnType(e.target.value as 'text' | 'date' | 'textarea')}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="text">Text</option>
+                <option value="textarea">Textarea</option>
+                <option value="date">Date</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-3 mt-4">
+            <button
+              onClick={() => setShowAddColumnForm(false)}
+              className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddColumn}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Add Column
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Client Entries</h3>
+          <button
+            onClick={() => setShowAddColumnForm(true)}
+            className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 transition-colors flex items-center space-x-1"
+          >
+            <Settings className="w-3 h-3" />
+            <span>Add Column</span>
+          </button>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
